@@ -182,6 +182,8 @@ services:
     container_name: openclaw
     hostname: openclaw
     env_file: .env
+    extra_hosts:
+      - "browser:127.0.0.1"
     ports:
       - "8080:8080"
       - "6901:6901"
