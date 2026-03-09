@@ -49,7 +49,7 @@
       "type": "info"
     },
     {
-      "text": "To update via CLI, run the addon script again and select Update, or use: bash <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/coolify.sh)",
+      "text": "To update via CLI, run the addon script again and select Update, or use: bash <(curl -fsSL https://raw.githubusercontent.com/gilsonsouzah/ProxmoxVE/main/tools/addon/coolify.sh)",
       "type": "info"
     }
   ]

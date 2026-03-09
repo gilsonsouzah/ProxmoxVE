@@ -45,7 +45,7 @@
       "type": "info"
     },
     {
-      "text": "To update, run the addon script again and select Update, or use: bash <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/komodo.sh)",
+      "text": "To update, run the addon script again and select Update, or use: bash <(curl -fsSL https://raw.githubusercontent.com/gilsonsouzah/ProxmoxVE/main/tools/addon/komodo.sh)",
       "type": "info"
     }
   ]

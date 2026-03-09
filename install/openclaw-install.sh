@@ -242,91 +242,97 @@ msg_ok "Started OpenClaw services"
 # it pulls and recreates the containers automatically.
 # =============================================================================
 
-msg_info "Setting up auto-update"
+msg_info "Installing openclawupdate CLI"
 
-cat <<'UPDATER' >/usr/local/bin/openclaw-update
+cat <<'UPDATER' >/usr/local/bin/openclawupdate
 #!/usr/bin/env bash
-# OpenClaw Auto-Update — checks for new image digests and redeploys.
+# openclawupdate — check for new OpenClaw Docker images and redeploy.
+# Usage:
+#   openclawupdate            pull + redeploy if new images exist
+#   openclawupdate --dry-run  only show what would happen, don't apply
 set -euo pipefail
 
-LOG_TAG="openclaw-update"
 COMPOSE_DIR="/opt/openclaw"
+DRY_RUN=false
 
-log() { logger -t "$LOG_TAG" "$*"; echo "[$(date -Iseconds)] $*"; }
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    -h|--help)
+      echo "Usage: openclawupdate [--dry-run]"
+      echo ""
+      echo "  --dry-run   Check for updates without applying them"
+      echo "  -h, --help  Show this help"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg"
+      echo "Usage: openclawupdate [--dry-run]"
+      exit 1
+      ;;
+  esac
+done
 
 # Read image names from docker-compose.yml
 OPENCLAW_IMAGE=$(grep -B1 'container_name: openclaw$' "$COMPOSE_DIR/docker-compose.yml" | grep 'image:' | awk '{print $2}')
 BROWSER_IMAGE=$(grep -B1 'container_name: openclaw-browser' "$COMPOSE_DIR/docker-compose.yml" | grep 'image:' | awk '{print $2}')
 
 if [[ -z "$OPENCLAW_IMAGE" || -z "$BROWSER_IMAGE" ]]; then
-  log "ERROR: Could not read image names from docker-compose.yml"
+  echo "ERROR: Could not read image names from docker-compose.yml"
   exit 1
 fi
+
+echo "Images:"
+echo "  openclaw:         $OPENCLAW_IMAGE"
+echo "  stealth-browser:  $BROWSER_IMAGE"
+echo ""
 
 # Get current local digests
 LOCAL_OCW=$(docker inspect --format='{{index .RepoDigests 0}}' "$OPENCLAW_IMAGE" 2>/dev/null || echo "none")
 LOCAL_BRW=$(docker inspect --format='{{index .RepoDigests 0}}' "$BROWSER_IMAGE" 2>/dev/null || echo "none")
 
-# Pull latest (docker uses stored credentials from docker login)
-docker pull "$OPENCLAW_IMAGE" >/dev/null 2>&1
-docker pull "$BROWSER_IMAGE" >/dev/null 2>&1
+echo "Pulling latest images..."
+docker pull "$OPENCLAW_IMAGE"
+docker pull "$BROWSER_IMAGE"
+echo ""
 
 # Get new digests
 REMOTE_OCW=$(docker inspect --format='{{index .RepoDigests 0}}' "$OPENCLAW_IMAGE" 2>/dev/null || echo "none")
 REMOTE_BRW=$(docker inspect --format='{{index .RepoDigests 0}}' "$BROWSER_IMAGE" 2>/dev/null || echo "none")
 
-if [[ "$LOCAL_OCW" == "$REMOTE_OCW" && "$LOCAL_BRW" == "$REMOTE_BRW" ]]; then
-  log "No updates found."
+OCW_CHANGED=false
+BRW_CHANGED=false
+[[ "$LOCAL_OCW" != "$REMOTE_OCW" ]] && OCW_CHANGED=true
+[[ "$LOCAL_BRW" != "$REMOTE_BRW" ]] && BRW_CHANGED=true
+
+if [[ "$OCW_CHANGED" == false && "$BRW_CHANGED" == false ]]; then
+  echo "Already up to date. Nothing to do."
   exit 0
 fi
 
-log "New image(s) detected, redeploying..."
-[[ "$LOCAL_OCW" != "$REMOTE_OCW" ]] && log "  openclaw: digest changed"
-[[ "$LOCAL_BRW" != "$REMOTE_BRW" ]] && log "  stealth-browser: digest changed"
+echo "Updates available:"
+$OCW_CHANGED && echo "  openclaw:         new digest"
+$BRW_CHANGED && echo "  stealth-browser:  new digest"
+echo ""
 
+if [[ "$DRY_RUN" == true ]]; then
+  echo "[dry-run] Would redeploy containers and prune old images."
+  echo "[dry-run] Run without --dry-run to apply."
+  exit 0
+fi
+
+echo "Redeploying..."
 cd "$COMPOSE_DIR"
 docker compose down
 docker compose up -d
-
-# Prune old images
 docker image prune -f >/dev/null 2>&1
 
-log "Update complete."
+echo ""
+echo "Update complete."
 UPDATER
-chmod +x /usr/local/bin/openclaw-update
+chmod +x /usr/local/bin/openclawupdate
 
-# systemd service for the updater
-cat <<EOF >/etc/systemd/system/openclaw-update.service
-[Unit]
-Description=OpenClaw Auto-Update (check GHCR for new images)
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/openclaw-update
-StandardOutput=journal
-StandardError=journal
-EOF
-
-# systemd timer — every 6 hours
-cat <<EOF >/etc/systemd/system/openclaw-update.timer
-[Unit]
-Description=OpenClaw Auto-Update Timer (every 6 hours)
-
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=6h
-RandomizedDelaySec=15min
-
-[Install]
-WantedBy=timers.target
-EOF
-
-systemctl daemon-reload
-systemctl enable -q --now openclaw-update.timer
-
-msg_ok "Auto-update enabled (checks every 6 hours)"
+msg_ok "Installed openclawupdate CLI"
 
 # =============================================================================
 # MOTD / UPDATE SCRIPT
@@ -335,11 +341,7 @@ msg_ok "Auto-update enabled (checks every 6 hours)"
 # Create /usr/bin/update for the ProxmoxVE helper update mechanism
 cat <<'UPDATE_SCRIPT' >/usr/bin/update
 #!/usr/bin/env bash
-echo "OpenClaw update is handled automatically every 6 hours."
-echo "To force an update now, run: openclaw-update"
-echo ""
-echo "Checking for updates..."
-/usr/local/bin/openclaw-update
+/usr/local/bin/openclawupdate "$@"
 UPDATE_SCRIPT
 chmod +x /usr/bin/update
 

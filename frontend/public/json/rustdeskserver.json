@@ -44,7 +44,7 @@
   },
   "notes": [
     {
-      "text": "Check our configuration guide for help: `https://github.com/community-scripts/ProxmoxVE/discussions/2388`",
+      "text": "Check our configuration guide for help: `https://github.com/gilsonsouzah/ProxmoxVE/discussions/2388`",
       "type": "info"
     },
     {
@@ -56,7 +56,7 @@
       "type": "info"
     },
     {
-      "text": "This script uses hbbs/hbbr builds from `lejianwen/rustdesk-server` (instead of the official repo) for full compatibility with the RustDesk API (SSO/OAuth). See `https://github.com/community-scripts/ProxmoxVE/issues/12079`.",
+      "text": "This script uses hbbs/hbbr builds from `lejianwen/rustdesk-server` (instead of the official repo) for full compatibility with the RustDesk API (SSO/OAuth). See `https://github.com/gilsonsouzah/ProxmoxVE/issues/12079`.",
       "type": "info"
     }
   ]

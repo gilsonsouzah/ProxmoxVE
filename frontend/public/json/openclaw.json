@@ -39,7 +39,7 @@
       "type": "warning"
     },
     {
-      "text": "Images auto-update every 6 hours via systemd timer. Force update with: openclaw-update",
+      "text": "Update manually: openclawupdate (or openclawupdate --dry-run to preview)",
       "type": "info"
     },
     {

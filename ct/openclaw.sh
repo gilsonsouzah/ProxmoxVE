@@ -29,39 +29,8 @@ function update_script() {
     exit
   fi
 
-  # Read image names from docker-compose.yml
-  OPENCLAW_IMAGE=$(grep -B1 'container_name: openclaw$' /opt/openclaw/docker-compose.yml | grep 'image:' | awk '{print $2}')
-  BROWSER_IMAGE=$(grep -B1 'container_name: openclaw-browser' /opt/openclaw/docker-compose.yml | grep 'image:' | awk '{print $2}')
-  OPENCLAW_IMAGE="${OPENCLAW_IMAGE:-ghcr.io/gilsonsouzah/openclaw:latest}"
-  BROWSER_IMAGE="${BROWSER_IMAGE:-ghcr.io/gilsonsouzah/openclaw-stealth-browser:latest}"
-
-  # Check for new openclaw image
-  LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$OPENCLAW_IMAGE" 2>/dev/null | sed 's/.*@//')
-  $STD docker pull "$OPENCLAW_IMAGE"
-  REMOTE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$OPENCLAW_IMAGE" 2>/dev/null | sed 's/.*@//')
-
-  # Check for new browser image
-  LOCAL_BROWSER_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$BROWSER_IMAGE" 2>/dev/null | sed 's/.*@//')
-  $STD docker pull "$BROWSER_IMAGE"
-  REMOTE_BROWSER_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$BROWSER_IMAGE" 2>/dev/null | sed 's/.*@//')
-
-  if [[ "$LOCAL_DIGEST" == "$REMOTE_DIGEST" && "$LOCAL_BROWSER_DIGEST" == "$REMOTE_BROWSER_DIGEST" ]]; then
-    msg_ok "Already up to date!"
-    exit
-  fi
-
-  msg_info "Stopping Services"
-  cd /opt/openclaw
-  $STD docker compose down
-  msg_ok "Stopped Services"
-
-  msg_info "Starting Services with new images"
-  $STD docker compose up -d
-  msg_ok "Started Services"
-
-  # Clean up old images
-  $STD docker image prune -f
-  msg_ok "Updated successfully!"
+  msg_info "Running openclawupdate"
+  /usr/local/bin/openclawupdate
   exit
 }
 
