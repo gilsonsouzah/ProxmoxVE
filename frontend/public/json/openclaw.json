@@ -1,0 +1,54 @@
+{
+  "name": "OpenClaw",
+  "slug": "openclaw",
+  "categories": [0],
+  "date_created": "2026-03-09",
+  "type": "ct",
+  "updateable": true,
+  "privileged": true,
+  "interface_port": 8080,
+  "documentation": "https://github.com/gilsonsouzah/openclaw",
+  "website": "https://github.com/gilsonsouzah/openclaw",
+  "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons@main/svg/openclaw.svg",
+  "config_path": "/opt/openclaw/.env",
+  "description": "OpenClaw AI assistant with stealth browser. Connects to WhatsApp, Telegram, Slack, Discord and 50+ services. Includes a Chrome stealth browser sidecar with VNC for web automation.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/openclaw.sh",
+      "resources": {
+        "cpu": 4,
+        "ram": 4096,
+        "hdd": 16,
+        "os": "debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": "admin",
+    "password": "set during installation"
+  },
+  "notes": [
+    {
+      "text": "Requires a GitHub PAT with read:packages scope to pull private GHCR images. Create one at https://github.com/settings/tokens/new",
+      "type": "warning"
+    },
+    {
+      "text": "Container must be PRIVILEGED (Docker inside LXC). The Docker containers themselves run with no-new-privileges.",
+      "type": "warning"
+    },
+    {
+      "text": "Images auto-update every 6 hours via systemd timer. Force update with: openclaw-update",
+      "type": "info"
+    },
+    {
+      "text": "Browser VNC accessible at http://IP:8080/browser/ (proxied through nginx with auth)",
+      "type": "info"
+    },
+    {
+      "text": "Edit /opt/openclaw/.env to add more AI providers, channels (WhatsApp, Telegram, Discord, Slack), and hooks.",
+      "type": "info"
+    }
+  ]
+}
