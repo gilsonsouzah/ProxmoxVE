@@ -174,6 +174,8 @@ msg_info "Creating Docker Compose configuration"
 mkdir -p /opt/openclaw/data /opt/openclaw/config /opt/openclaw/browser
 chown -R 1000:1000 /opt/openclaw/browser
 
+LXC_HOSTNAME=$(hostname)
+
 cat <<COMPOSE >/opt/openclaw/docker-compose.yml
 name: openclaw
 services:
@@ -182,6 +184,8 @@ services:
     container_name: openclaw
     env_file: .env
     network_mode: host
+    extra_hosts:
+      - "${LXC_HOSTNAME}:127.0.0.1"
     volumes:
       - /opt/openclaw/data:/data
       - /opt/openclaw/config:/app/config
@@ -206,6 +210,8 @@ services:
       - VNC_PW=\${VNC_PW:-changeme}
       - CDP_PORT=9222
     network_mode: host
+    extra_hosts:
+      - "${LXC_HOSTNAME}:127.0.0.1"
     shm_size: 512m
     volumes:
       - /opt/openclaw/browser:/home/kasm-user
