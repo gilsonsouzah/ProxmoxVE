@@ -106,6 +106,7 @@ msg_ok "Pulled OpenClaw images"
 
 msg_info "Configuring OpenClaw"
 
+mkdir -p /opt/openclaw
 get_lxc_ip
 
 cat <<EOF >/opt/openclaw/.env
