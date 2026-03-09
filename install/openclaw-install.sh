@@ -172,6 +172,7 @@ msg_ok "Configured OpenClaw"
 msg_info "Creating Docker Compose configuration"
 
 mkdir -p /opt/openclaw/data /opt/openclaw/config /opt/openclaw/browser
+chown -R 1000:1000 /opt/openclaw/browser
 
 cat <<COMPOSE >/opt/openclaw/docker-compose.yml
 name: openclaw
@@ -186,7 +187,7 @@ services:
       - /opt/openclaw/config:/app/config
     depends_on:
       openclaw-browser:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -200,6 +201,7 @@ services:
   openclaw-browser:
     image: ${BROWSER_IMAGE}
     container_name: openclaw-browser
+    init: true
     environment:
       - VNC_PW=\${VNC_PW:-changeme}
       - CDP_PORT=9222
@@ -212,10 +214,8 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
-      start_period: 60s
+      start_period: 90s
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     deploy:
       resources:
         limits:
@@ -233,14 +233,28 @@ msg_ok "Created Docker Compose configuration"
 msg_info "Starting OpenClaw services"
 cd /opt/openclaw
 $STD docker compose up -d
-msg_ok "Started OpenClaw services"
+
+# Wait for browser CDP to be ready (up to 90s)
+BROWSER_READY=false
+for i in $(seq 1 18); do
+  if docker exec openclaw-browser wget --no-verbose --tries=1 --spider http://localhost:9222/json/version >/dev/null 2>&1; then
+    BROWSER_READY=true
+    break
+  fi
+  sleep 5
+done
+
+if [[ "$BROWSER_READY" == true ]]; then
+  msg_ok "Started OpenClaw services (browser CDP ready)"
+else
+  msg_ok "Started OpenClaw services (browser may still be initializing)"
+fi
 
 # =============================================================================
-# AUTO-UPDATE MECHANISM
+# UPDATE CLI
 # =============================================================================
-# Creates a script + systemd timer that checks GHCR every 6 hours for new
-# image digests. If either openclaw or stealth-browser has a new digest,
-# it pulls and recreates the containers automatically.
+# Creates /usr/local/bin/openclawupdate — a manual CLI to check for new
+# image digests and redeploy if needed.
 # =============================================================================
 
 msg_info "Installing openclawupdate CLI"
