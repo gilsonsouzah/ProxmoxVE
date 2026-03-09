@@ -174,24 +174,21 @@ msg_info "Creating Docker Compose configuration"
 mkdir -p /opt/openclaw/data /opt/openclaw/config /opt/openclaw/browser
 chown -R 1000:1000 /opt/openclaw/browser
 
-LXC_HOSTNAME=$(hostname)
-
 cat <<COMPOSE >/opt/openclaw/docker-compose.yml
 name: openclaw
 services:
   openclaw:
     image: ${OPENCLAW_IMAGE}
     container_name: openclaw
+    hostname: openclaw
     env_file: .env
-    network_mode: host
-    extra_hosts:
-      - "${LXC_HOSTNAME}:127.0.0.1"
+    ports:
+      - "8080:8080"
+      - "6901:6901"
+      - "9222:9222"
     volumes:
       - /opt/openclaw/data:/data
       - /opt/openclaw/config:/app/config
-    depends_on:
-      openclaw-browser:
-        condition: service_started
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -209,9 +206,11 @@ services:
     environment:
       - VNC_PW=\${VNC_PW:-changeme}
       - CDP_PORT=9222
-    network_mode: host
-    extra_hosts:
-      - "${LXC_HOSTNAME}:127.0.0.1"
+      - APP_ARGS=--user-data-dir=/home/kasm-user/chrome-profile
+    network_mode: service:openclaw
+    depends_on:
+      openclaw:
+        condition: service_started
     shm_size: 512m
     volumes:
       - /opt/openclaw/browser:/home/kasm-user
